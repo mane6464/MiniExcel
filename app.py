@@ -6,8 +6,8 @@ import io
 
 # 1. Configuración de la página web
 st.set_page_config(page_title="Mi Excel Ligero", page_icon="📊", layout="wide")
-st.title("📊 Mi Generador de Tablas Ligero (Versión Pro)")
-st.write("Llena la tabla, gestiona tus columnas, personaliza el diseño y descarga tu archivo de Excel.")
+st.title("📊 Mi Generador de Tablas Ligero (Versión Estable)")
+st.write("Modifica la estructura en la barra lateral, edita la tabla sin parpadeos y presiona 'Guardar cambios' para actualizar.")
 
 # 2. Inicializar la tabla en la memoria de la sesión si no existe
 if "df_datos" not in st.session_state:
@@ -70,18 +70,23 @@ dict_alineacion = {
 }
 alineacion_final = dict_alineacion[alineacion]
 
-# 4. Creación de la tabla interactiva en la pantalla
+# 4. Creación de la tabla interactiva DENTRO de un Formulario aislado
 st.subheader("📝 Edita tus datos aquí abajo:")
 
-# ✨ LA SOLUCIÓN: Usamos 'value' para cargar los datos y una key diferente ('editor_tabla')
-# para capturar los cambios sobre la marcha, guardándolos inmediatamente en 'df_datos'.
-tabla_editada = st.data_editor(
-    st.session_state.df_datos, 
-    num_rows="dynamic", 
-    use_container_width=True, 
-    key="editor_tabla"
-)
-st.session_state.df_datos = tabla_editada
+# Al meterlo en un st.form, evitamos que Streamlit recargue la página cada vez que cambias de celda
+with st.form("contenedor_tabla"):
+    tabla_editada = st.data_editor(
+        st.session_state.df_datos, 
+        num_rows="dynamic", 
+        use_container_width=True
+    )
+    
+    # Este botón procesa de golpe todos los cambios que hayas hecho en las celdas
+    boton_guardar = st.form_submit_button("💾 Guardar cambios en la tabla")
+    
+    if boton_guardar:
+        st.session_state.df_datos = tabla_editada
+        st.success("¡Datos guardados con éxito en la memoria!")
 
 # 5. Función para procesar la tabla y aplicar los estilos seleccionados
 def generar_excel(dataframe, color_bg, tamano_fuente, alineacion_obj):
@@ -124,7 +129,7 @@ def generar_excel(dataframe, color_bg, tamano_fuente, alineacion_obj):
     buffer.seek(0)
     return buffer
 
-# 6. Botón de descarga
+# 6. Botón de descarga (fuera del formulario)
 st.markdown("---")
 if st.button("🚀 Generar y preparar descarga de Excel"):
     archivo_excel = generar_excel(st.session_state.df_datos, color_hex, tamano_letra_datos, alineacion_final)
