@@ -2,13 +2,13 @@ import streamlit as st
 import pandas as pd
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
-from openpyxl.utils import get_column_letter  # ✨ IMPORTACIÓN NUEVA Y SEGURA
+from openpyxl.utils import get_column_letter
 import io
 
 # 1. Configuración de la página web
 st.set_page_config(page_title="Mi Excel Ligero", page_icon="📊", layout="wide")
-st.title("📊 Mi Generador de Tablas Ligero (Versión Estable)")
-st.write("Modifica la estructura en la barra lateral, edita la tabla sin parpadeos y presiona 'Guardar cambios' para actualizar.")
+st.title("📊 Mi Generador de Tablas Ligero (Versión Avanzada)")
+st.write("Gestiona tus columnas arriba, edita tus datos abajo y personaliza el diseño a la izquierda.")
 
 # 2. Inicializar la tabla en la memoria de la sesión si no existe
 if "df_datos" not in st.session_state:
@@ -19,51 +19,12 @@ if "df_datos" not in st.session_state:
     }
     st.session_state.df_datos = pd.DataFrame(data_inicial)
 
-# 3. Barra lateral para la estructura de la tabla
-st.sidebar.header("🛠️ Estructura de la Tabla")
-
-# --- SECCIÓN AÑADIR COLUMNA ---
-nueva_columna = st.sidebar.text_input("Nombre de la nueva columna", placeholder="Ej. Teléfono")
-if st.sidebar.button("➕ Agregar Columna"):
-    if nueva_columna:
-        if nueva_columna not in st.session_state.df_datos.columns:
-            st.session_state.df_datos[nueva_columna] = [""] * len(st.session_state.df_datos)
-            st.rerun()
-        else:
-            st.sidebar.error("Esa columna ya existe.")
-    else:
-        st.sidebar.warning("Escribe un nombre para la columna.")
-
-st.sidebar.markdown("---")
-
-# --- SECCIÓN RENOMBRAR COLUMNA ---
-st.sidebar.subheader("✏️ Renombrar Columna")
-columna_a_cambiar = st.sidebar.selectbox("Selecciona la columna a modificar", st.session_state.df_datos.columns)
-nuevo_nombre = st.sidebar.text_input("Nuevo nombre de columna", placeholder="Ej. Cantidad")
-
-if st.sidebar.button("🔄 Cambiar Nombre"):
-    if nuevo_nombre:
-        if nuevo_nombre not in st.session_state.df_datos.columns:
-            st.session_state.df_datos = st.session_state.df_datos.rename(columns={columna_a_cambiar: nuevo_nombre})
-            st.success(f"¡Cambiado '{columna_a_cambiar}' por '{nuevo_nombre}'!")
-            st.rerun()
-        else:
-            st.sidebar.error("Ya existe una columna con ese nombre.")
-    else:
-        st.sidebar.warning("Escribe el nuevo nombre.")
-
-
-st.sidebar.markdown("---")
+# 3. Barra lateral limpia: Solo para el diseño general
 st.sidebar.header("🎨 Configuración del Diseño")
-
-# Caja de texto para el título opcional
 titulo_tabla = st.sidebar.text_input("📝 Título superior de la tabla", placeholder="Ej. Reporte de Ventas")
-
-# Selector de color
 color_elegido = st.sidebar.color_picker("Color de fondo del encabezado", "#365F91")
 color_hex = color_elegido.replace("#", "")
 
-# Ajustes de texto
 tamano_letra_datos = st.sidebar.slider("Tamaño de letra de los datos", min_value=10, max_value=20, value=12)
 alineacion = st.sidebar.selectbox("Alineación del texto", ["Centrado", "Izquierda", "Derecha"])
 
@@ -74,8 +35,52 @@ dict_alineacion = {
 }
 alineacion_final = dict_alineacion[alineacion]
 
-# 4. Creación de la tabla interactiva DENTRO de un Formulario aislado
-st.subheader("📝 Edita tus datos aquí abajo:")
+
+# 4. Zona Principal: Gestión de Columnas (¡Adiós barra lateral!)
+st.subheader("🛠️ Gestión de Columnas")
+
+# Fila para agregar una nueva columna
+col_input, col_btn = st.columns([3, 1])
+with col_input:
+    nueva_columna = st.text_input("Nombre para agregar nueva columna", placeholder="Ej. Total", label_visibility="collapsed")
+with col_btn:
+    if st.button("➕ Agregar Columna", use_container_width=True):
+        if nueva_columna:
+            if nueva_columna not in st.session_state.df_datos.columns:
+                st.session_state.df_datos[nueva_columna] = [""] * len(st.session_state.df_datos)
+                st.rerun()
+            else:
+                st.error("Esa columna ya existe.")
+        else:
+            st.warning("Escribe un nombre.")
+
+st.write("**Haz clic en el botón de cualquier columna para cambiarle el nombre:**")
+
+# ✨ EL TRUCO: Creamos una fila de botones horizontal, uno para cada columna actual
+columnas_actuales = list(st.session_state.df_datos.columns)
+bloques_columnas = st.columns(len(columnas_actuales))
+
+for i, nombre_col in enumerate(columnas_actuales):
+    with bloques_columnas[i]:
+        # Usamos un componente 'popover' que actúa como un botón que abre una cajita al presionarlo
+        with st.popover(f"✏️ {nombre_col}", use_container_width=True):
+            nuevo_nombre = st.text_input(f"Nuevo nombre para '{nombre_col}':", key=f"input_renombrar_{i}")
+            if st.button("Aplicar", key=f"btn_renombrar_{i}"):
+                if nuevo_nombre:
+                    if nuevo_nombre not in st.session_state.df_datos.columns:
+                        # Renombramos la columna en el DataFrame
+                        st.session_state.df_datos = st.session_state.df_datos.rename(columns={nombre_col: nuevo_nombre})
+                        st.success("¡Cambiado!")
+                        st.rerun()
+                    else:
+                        st.error("Ya existe ese nombre.")
+                else:
+                    st.warning("Escribe un nombre válido.")
+
+st.markdown("---")
+
+# 5. Edición de Datos dentro del Formulario
+st.subheader("📝 Datos de la Tabla")
 
 with st.form("contenedor_tabla"):
     tabla_editada = st.data_editor(
@@ -88,9 +93,9 @@ with st.form("contenedor_tabla"):
     
     if boton_guardar:
         st.session_state.df_datos = tabla_editada
-        st.success("¡Datos guardados con éxito en la memoria!")
+        st.success("¡Datos guardados con éxito!")
 
-# 5. Función para procesar la tabla y aplicar los estilos seleccionados
+# 6. Función para procesar el archivo Excel
 def generar_excel(dataframe, color_bg, tamano_fuente, alineacion_obj, texto_titulo):
     wb = Workbook()
     ws = wb.active
@@ -99,10 +104,9 @@ def generar_excel(dataframe, color_bg, tamano_fuente, alineacion_obj, texto_titu
     columnas = list(dataframe.columns)
     fila_inicio_tabla = 1
     
-    # Lógica del título superior
     if texto_titulo:
         ws["A1"] = texto_titulo
-        ws["A1"].font = Font(name="Arial", size=24, bold=True, color="000000")
+        ws["A1"].font = Font(name="Arial", size=16, bold=True, color="000000")
         ws["A1"].alignment = Alignment(horizontal="left", vertical="center")
         
         if len(columnas) > 1:
@@ -110,17 +114,14 @@ def generar_excel(dataframe, color_bg, tamano_fuente, alineacion_obj, texto_titu
         
         fila_inicio_tabla = 3
 
-    # Insertamos los encabezados de las columnas
     for col_num, nombre_columna in enumerate(columnas, start=1):
         ws.cell(row=fila_inicio_tabla, column=col_num, value=nombre_columna)
 
-    # Insertamos los datos de las filas
     for index, fila in dataframe.iterrows():
         fila_excel = fila_inicio_tabla + 1 + index
         for col_num, valor in enumerate(list(fila), start=1):
             ws.cell(row=fila_excel, column=col_num, value=valor)
 
-    # Configuramos los estilos
     fill_encabezado = PatternFill(start_color=color_bg, end_color=color_bg, fill_type="solid")
     fuente_encabezado = Font(name="Arial", size=12, bold=True, color="FFFFFF")
     fuente_datos = Font(name="Arial", size=tamano_fuente, bold=False)
@@ -137,10 +138,9 @@ def generar_excel(dataframe, color_bg, tamano_fuente, alineacion_obj, texto_titu
             else:
                 celda.font = fuente_datos
 
-    # ✨ SECCIÓN CORREGIDA: Autoajustar el ancho usando la función nativa segura
     for col_index, col in enumerate(ws.columns, start=1):
         max_len = 0
-        col_letter = get_column_letter(col_index) # Conversión numérica segura (1->A, 2->B...)
+        col_letter = get_column_letter(col_index)
         
         for celda in col:
             if celda.row == 1 and texto_titulo:
@@ -156,7 +156,7 @@ def generar_excel(dataframe, color_bg, tamano_fuente, alineacion_obj, texto_titu
     buffer.seek(0)
     return buffer
 
-# 6. Botón de descarga
+# 7. Botón de descarga
 st.markdown("---")
 if st.button("🚀 Generar y preparar descarga de Excel"):
     archivo_excel = generar_excel(st.session_state.df_datos, color_hex, tamano_letra_datos, alineacion_final, titulo_tabla)
