@@ -73,8 +73,14 @@ alineacion_final = dict_alineacion[alineacion]
 # 4. Creación de la tabla interactiva en la pantalla
 st.subheader("📝 Edita tus datos aquí abajo:")
 
-# Mostramos el editor y mantenemos sincronizados los cambios
-tabla_editada = st.data_editor(st.session_state.df_datos, num_rows="dynamic", use_container_width=True)
+# ✨ LA SOLUCIÓN: Usamos 'value' para cargar los datos y una key diferente ('editor_tabla')
+# para capturar los cambios sobre la marcha, guardándolos inmediatamente en 'df_datos'.
+tabla_editada = st.data_editor(
+    st.session_state.df_datos, 
+    num_rows="dynamic", 
+    use_container_width=True, 
+    key="editor_tabla"
+)
 st.session_state.df_datos = tabla_editada
 
 # 5. Función para procesar la tabla y aplicar los estilos seleccionados
@@ -102,20 +108,15 @@ def generar_excel(dataframe, color_bg, tamano_fuente, alineacion_obj):
             else:
                 celda.font = fuente_datos
 
-    # ✨ NUEVA LÓGICA: Autoajustar el ancho de las columnas según el texto más largo
+    # Autoajustar el ancho de las columnas
     for col in ws.columns:
         max_len = 0
-        col_letter = col[0].column_letter # Obtenemos la letra de la columna (A, B, C...)
-        
+        col_letter = col[0].column_letter
         for celda in col:
             if celda.value is not None:
-                # Medimos cuántos caracteres tiene el texto de la celda
                 len_texto = len(str(celda.value))
                 if len_texto > max_len:
                     max_len = len_texto
-        
-        # Le damos un margen extra de +4 espacios para que no quede tan ajustado.
-        # Ponemos un mínimo de 12 para que las columnas no queden extremadamente delgadas si están vacías.
         ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
 
     buffer = io.BytesIO()
