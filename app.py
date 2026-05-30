@@ -7,7 +7,7 @@ import io
 
 # 1. Configuración de la página web
 st.set_page_config(page_title="Mi Excel Ligero", page_icon="📊", layout="wide")
-st.title("📊 Mi Generador de Tablas Ligero (Versión Avanzada)")
+st.title("📊 Generador de tablas personal")
 st.write("Gestiona tus columnas arriba, edita tus datos abajo y personaliza el diseño a la izquierda.")
 
 # 2. Inicializar la tabla en la memoria de la sesión si no existe
