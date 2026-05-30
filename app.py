@@ -102,7 +102,7 @@ def generar_excel(dataframe, color_bg, tamano_fuente, alineacion_obj, texto_titu
     # Lógica del título superior
     if texto_titulo:
         ws["A1"] = texto_titulo
-        ws["A1"].font = Font(name="Arial", size=16, bold=True, color="000000")
+        ws["A1"].font = Font(name="Arial", size=24, bold=True, color="000000")
         ws["A1"].alignment = Alignment(horizontal="left", vertical="center")
         
         if len(columnas) > 1:
